@@ -2,7 +2,7 @@
 
 # =======================================================
 # PostgreSQL DBA Morning Survey
-# Version 0.1
+# Version 0.2
 # The script created for Survey
 # This will be run from the crontab
 # It will list top dead tuples
@@ -62,6 +62,40 @@ EOF
     echo "" >> "$OUTPUT_FILE"
 }
 
+# ---- Get Bloated Tables ----
+get_bloated_tables() {
+    echo "==== Bloated Tables (Ratio > $BLOAT_RATIO_THRESHOLD, Size > ${BLOAT_SIZE_THRESHOLD_MB} MB) ====" >> "$OUTPUT_FILE"
+
+    psql -At <<EOF >> "$OUTPUT_FILE"
+WITH bloat AS (
+    SELECT
+        schemaname,
+        relname,
+        pg_total_relation_size(relid) AS total_bytes,
+        pg_relation_size(relid) AS table_bytes,
+        n_dead_tup,
+        n_live_tup,
+        CASE
+            WHEN n_live_tup = 0 THEN 0
+            ELSE n_dead_tup::float / (n_live_tup + n_dead_tup)
+        END AS bloat_ratio
+    FROM pg_stat_user_tables
+)
+SELECT
+    schemaname||'.'||relname,
+    round(total_bytes/1024/1024) AS total_mb,
+    round(table_bytes/1024/1024) AS table_mb,
+    round((total_bytes - table_bytes)/1024/1024) AS wasted_mb,
+    round(bloat_ratio*100,2) AS bloat_pct
+FROM bloat
+WHERE bloat_ratio > $BLOAT_RATIO_THRESHOLD
+  AND (total_bytes - table_bytes)/1024/1024 > $BLOAT_SIZE_THRESHOLD_MB
+ORDER BY wasted_mb DESC;
+EOF
+
+    echo "" >> "$OUTPUT_FILE"
+}
+
 # ---- Compare Results ----
 compare_results() {
     if [[ "$ENABLE_COMPARE" != "true" ]]; then
@@ -82,11 +116,18 @@ compare_results() {
     grep -A1000 "Large Tables" "$OUTPUT_FILE" | tail -n +2 > /tmp/today_size.txt
     grep -A1000 "Large Tables" "$PREV_FILE" | tail -n +2 > /tmp/yest_size.txt
 
+    grep -A1000 "Bloated Tables" "$OUTPUT_FILE" | tail -n +2 > /tmp/today_bloat.txt
+    grep -A1000 "Bloated Tables" "$PREV_FILE" | tail -n +2 > /tmp/yest_bloat.txt 
+
+
     echo "--- Dead Tuple Changes ---" >> "$OUTPUT_FILE"
     join_compare /tmp/yest_dead.txt /tmp/today_dead.txt >> "$OUTPUT_FILE"
 
     echo "--- Table Size Changes ---" >> "$OUTPUT_FILE"
     join_compare /tmp/yest_size.txt /tmp/today_size.txt >> "$OUTPUT_FILE"
+
+    echo "--- Bloat Changes ---" >> "$OUTPUT_FILE"
+    join_compare /tmp/yest_bloat.txt /tmp/today_bloat.txt >> "$OUTPUT_FILE"
 
     echo "" >> "$OUTPUT_FILE"
 }
@@ -119,6 +160,7 @@ main() {
 
     get_dead_tuples
     get_large_tables
+    get_bloated_tables
     compare_results
 
     echo "Report generated: $OUTPUT_FILE"

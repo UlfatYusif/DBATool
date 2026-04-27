@@ -10,6 +10,10 @@ TABLE_SIZE_THRESHOLD_MB=1   # 0.1 GB
 #DEAD_TUPLE_THRESHOLD=10000
 #TABLE_SIZE_THRESHOLD_MB=1024   # 1 GB
 
+# Bloat settings
+BLOAT_RATIO_THRESHOLD=0.2      # 20% bloat
+BLOAT_SIZE_THRESHOLD_MB=50    # minimum wasted size
+
 # Output
 LOG_DIR=./logs
 OUTPUT_PREFIX=pg_survey
