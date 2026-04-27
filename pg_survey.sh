@@ -86,10 +86,10 @@ SELECT
     round(total_bytes/1024/1024) AS total_mb,
     round(table_bytes/1024/1024) AS table_mb,
     round((total_bytes - table_bytes)/1024/1024) AS wasted_mb,
-    round(bloat_ratio*100,2) AS bloat_pct
+    round((bloat_ratio*100)::numeric, 2) AS bloat_pct
 FROM bloat
-WHERE bloat_ratio > $BLOAT_RATIO_THRESHOLD
-  AND (total_bytes - table_bytes)/1024/1024 > $BLOAT_SIZE_THRESHOLD_MB
+WHERE bloat_ratio > $BLOAT_RATIO_THRESHOLD    -- ⚠️ 1 = 100%, so use 0.2 for 20%
+  AND (total_bytes - table_bytes)/1024/1024 > $BLOAT_SIZE_THRESHOLD_MB 
 ORDER BY wasted_mb DESC;
 EOF
 

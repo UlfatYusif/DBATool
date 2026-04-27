@@ -4,4 +4,6 @@ PostgreSQL Morning Survey - 2026-04-26
 
 ==== Large Tables (Threshold: 1 MB) ====
 
+==== Bloated Tables (Ratio > 0.2, Size > 50 MB) ====
+
 No previous file to compare.
