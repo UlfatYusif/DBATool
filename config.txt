@@ -1,0 +1,18 @@
+# PostgreSQL connection
+PGHOST=localhost
+PGPORT=5432
+PGUSER=postgres
+PGDATABASE=postgres
+
+# Thresholds
+DEAD_TUPLE_THRESHOLD=10
+TABLE_SIZE_THRESHOLD_MB=1   # 0.1 GB
+#DEAD_TUPLE_THRESHOLD=10000
+#TABLE_SIZE_THRESHOLD_MB=1024   # 1 GB
+
+# Output
+LOG_DIR=./logs
+OUTPUT_PREFIX=pg_survey
+
+# Features
+ENABLE_COMPARE=true
